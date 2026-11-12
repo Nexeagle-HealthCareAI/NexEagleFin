@@ -1,0 +1,29 @@
+# Local and pilot setup. Copy .env.example to .env and set real values first.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: nexeaglefin
+      POSTGRES_USER: nexeaglefin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexeaglefin"]
+      interval: 5s
+      retries: 10
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://nexeaglefin:${POSTGRES_PASSWORD}@db:5432/nexeaglefin
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+volumes:
+  pgdata:
